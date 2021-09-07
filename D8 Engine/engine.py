@@ -18,7 +18,6 @@ gun = pygame.image.load("assets/gun.png").convert_alpha()
 gunfire = pygame.image.load("assets/gunfire.png").convert_alpha()
 arc = pygame.image.load("assets/arc.png").convert_alpha()
 sol = pygame.image.load("assets/sol.png").convert_alpha()
-gunfiresound = AudioPlayer("assets/fire.mp3")
 viseur = pygame.image.load("assets/viseur.png").convert_alpha()
 tree = pygame.image.load("assets/tree.png").convert_alpha()
 stree = pygame.image.load("assets/tree.png").convert_alpha()
@@ -26,7 +25,11 @@ statue1 = pygame.image.load("assets/statue.png").convert_alpha()
 statue2 = pygame.image.load("assets/statue.png").convert_alpha()
 running = True
 
+# Chargement des sons
 
+gunfiresound = AudioPlayer("assets/fire.mp3")
+jumpsound = AudioPlayer("assets/jump.wav")
+descentesound = AudioPlayer("assets/landing.wav")
 
 # Initialisation des variables de l'engine
 
@@ -44,6 +47,14 @@ animationtimehaut = 0
 animationgunhaut = 0
 animationtimegunhaut = 0
 
+
+
+prepareanimation = 0
+prepareanimationtime = 0
+jumpanimation = 0
+jumpanimationtime = 0
+descenteanimation = 0
+descenteanimationtime = 0
 # OBJECTS
 
 soly = 0
@@ -113,13 +124,13 @@ while running:
 
 
 # La souris
-	if treey >= -30 and treey <= 1000:
+	if treey >= -50 and treey <= 1000:
 		screen.blit(tree, (treey, soly))
-	if streey >= -30 and streey <= 1000:
+	if streey >= -50 and streey <= 1000:
 		screen.blit(tree, (streey, soly))
-	if ttreey >= -30 and ttreey <= 1000:
+	if ttreey >= -50 and ttreey <= 1000:
 		screen.blit(tree, (ttreey, soly))
-	if ftreey >= -30 and ftreey <= 1000:
+	if ftreey >= -50 and ftreey <= 1000:
 		screen.blit(tree, (ftreey, soly))
 	if statue1y >= -100 and statue1y <= 1000:
 		screen.blit(statue1, (statue1y, soly))
@@ -171,13 +182,12 @@ while running:
 
 	if weapon == 1: # PISTOLET
 		if fire == 0:
-			screen.blit(gun, (weaponx, guny))   # Pistolet 
+			screen.blit(gun, (weaponx, guny))
 		elif fire == 1:
 			screen.blit(gunfire, (weaponx, guny))
 	elif weapon == 2: # ARC
 		screen.blit(arc, (weaponx, arcy)) 
 
-# CHANGEMENT D'ÉQUIPEMENT ANIMATION
 
 # Quittez le moteur
 
@@ -213,6 +223,11 @@ while running:
 				print("AVANCER")
 				mouvement = 1
 
+			elif event.key == pygame.K_SPACE:
+				prepareanimation = 1
+
+
+
 	
 		
 
@@ -221,6 +236,42 @@ while running:
 		fire = 0
 	elif chrono >= 1000:
 		chrono = 0
+
+
+	if prepareanimation == 1:
+		prepareanimationtime+=1
+		if prepareanimationtime == 1:
+			soly-=1.2
+			print(soly)
+			prepareanimationtime = 0
+			if soly <= -20:
+				soly = 0
+				prepareanimation = 0
+				jumpanimation = 1
+				jumpsound.play()
+
+
+	if jumpanimation == 1:
+		jumpanimationtime+=1
+		if jumpanimationtime == 1:
+			soly+=5.2
+			print(soly)
+			jumpanimationtime = 0
+			if soly >= 450:
+				descenteanimation = 1
+				jumpanimation = 0
+
+	if descenteanimation == 1:
+		descenteanimationtime+=1
+		if descenteanimationtime == 1:
+			soly-=5.2
+			print(soly)
+			descenteanimationtime = 0
+			if soly <= 0:
+				soly = 0
+				descenteanimation = 0
+				descentesound.play()
+
 
 	if animationarc == 1:
 		animationtime+=1
