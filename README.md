@@ -2,22 +2,15 @@
 
 ## 🎥 Preview
 
-### In-game
-![In-game view](descriptions/image.png)
-![In-game map](descriptions/ingame_map_2.png)
-![In-game view 2](descriptions/image2.png)
-
-### 🗺️ Map Editor
-![Map editor](descriptions/map_editor.png)
-![Map editor](descriptions/map_editor_1.png)
-![Map editor](descriptions/map_editor_2.png)
-![Map editor](descriptions/map_editor_3.png)
-
-### ✨ Showcases
-![Gameplay showcase](descriptions/showcase.gif)
-![Gameplay showcase 2](descriptions/showcase2.gif)
-
----
+<img src="description/image.png" width="50%">
+<img src="description/map_editor.png" width="50%">
+<img src="description/showcase2.gif" width="50%">
+<img src="description/map_editor_2.png" width="50%">
+<img src="description/ingame_map_2.png" width="50%">
+<img src="description/map_editor_3.png" width="50%">
+<img src="description/showcase.gif" width="50%">
+<img src="description/map_editor_1.png" width="50%">
+<img src="description/image2.png" width="50%">
 
 ### 🎮 WHAT'S DONE / NEXT 🎮
 
@@ -78,3 +71,5 @@
 ❌ Templates: Save reusable configurations  
 
 **Summary: 11/38 features complete (29%)**
+
+discord: aalxvix
