@@ -13,11 +13,13 @@ class Weapon:
         self.sound = AudioPlayer(sound_path) if sound_path else None
         self.x = 350
         self.y = 305
+        self.base_y = 305  # Base Y position for recoil
         self.is_firing = False
         self.fire_timer = 0.0  # Timer en secondes
         self.fire_duration = 0.3  # Durée du flash de tir (0.3 secondes)
         self.animation_state = 0
         self.animation_time = 0
+        self.recoil_offset = 0  # Recoil animation offset
         
     def fire(self):
         """Tire avec l'arme"""
@@ -25,6 +27,7 @@ class Weapon:
             self.sound.play()
         self.is_firing = True
         self.fire_timer = 0.0
+        self.recoil_offset = 15  # Start recoil
         
     def update(self, delta_time):
         """Met à jour l'état de l'arme"""
@@ -33,13 +36,21 @@ class Weapon:
             if self.fire_timer >= self.fire_duration:
                 self.is_firing = False
                 self.fire_timer = 0.0
+        
+        # Smooth recoil recovery
+        if self.recoil_offset > 0:
+            self.recoil_offset -= 60 * delta_time  # Recover at 60 pixels/sec
+            if self.recoil_offset < 0:
+                self.recoil_offset = 0
             
     def draw(self, screen):
         """Dessine l'arme"""
+        # Apply recoil offset
+        draw_y = self.y + int(self.recoil_offset)
         if self.is_firing and self.fire_image:
-            screen.blit(self.fire_image, (self.x, self.y))
+            screen.blit(self.fire_image, (self.x, draw_y))
         else:
-            screen.blit(self.image, (self.x, self.y))
+            screen.blit(self.image, (self.x, draw_y))
             
     def update_position(self, mouse_x, mouse_y, base_y):
         """Met à jour la position de l'arme selon la souris"""
@@ -71,14 +82,44 @@ class Gun(Weapon):
         )
         self.y = 305
         self.munitions = 10
+        self.max_munitions = 10
+        self.reserve_ammo = 30  # Reserve ammunition
+        self.is_reloading = False
+        self.reload_timer = 0.0
+        self.reload_duration = 1.5  # Seconds to reload
         
     def fire(self):
         """Tire avec le pistolet si munitions disponibles"""
+        if self.is_reloading:
+            return False
         if self.munitions > 0:
             super().fire()
             self.munitions -= 1
             return True
         return False
+    
+    def start_reload(self):
+        """Start reloading the weapon"""
+        if self.is_reloading or self.munitions == self.max_munitions or self.reserve_ammo == 0:
+            return False
+        self.is_reloading = True
+        self.reload_timer = 0.0
+        return True
+    
+    def update(self, delta_time):
+        """Update weapon state including reload"""
+        super().update(delta_time)
+        
+        if self.is_reloading:
+            self.reload_timer += delta_time
+            if self.reload_timer >= self.reload_duration:
+                # Reload complete
+                ammo_needed = self.max_munitions - self.munitions
+                ammo_to_load = min(ammo_needed, self.reserve_ammo)
+                self.munitions += ammo_to_load
+                self.reserve_ammo -= ammo_to_load
+                self.is_reloading = False
+                self.reload_timer = 0.0
         
     def update_position(self, mouse_x, mouse_y):
         super().update_position(mouse_x, mouse_y, 305)
@@ -364,7 +405,15 @@ class Player:
         self.acceleration = 0.3  # Accélération
         self.friction = 0.85  # Friction
         
+        # Stamina system
+        self.max_stamina = 100.0
+        self.stamina = self.max_stamina
+        self.stamina_drain_rate = 25.0  # Per second while sprinting
+        self.stamina_regen_rate = 15.0  # Per second when not sprinting
+        self.min_stamina_to_sprint = 10.0  # Minimum stamina needed to start sprint
+        
         self.is_sprinting = False  # État du sprint
+        self.can_sprint = True  # Can sprint if stamina allows
         
         self.rotation_speed = 0.002  # Vitesse de rotation de la tête
         
@@ -398,10 +447,25 @@ class Player:
         self.moving_right = False
     
     def start_sprint(self):
-        self.is_sprinting = True
+        if self.stamina >= self.min_stamina_to_sprint:
+            self.is_sprinting = True
     
     def stop_sprint(self):
         self.is_sprinting = False
+    
+    def update_stamina(self, delta_time, is_moving):
+        """Update stamina based on sprint state"""
+        if self.is_sprinting and is_moving:
+            # Drain stamina while sprinting
+            self.stamina -= self.stamina_drain_rate * delta_time
+            if self.stamina <= 0:
+                self.stamina = 0
+                self.is_sprinting = False  # Force stop sprint
+        else:
+            # Regenerate stamina
+            self.stamina += self.stamina_regen_rate * delta_time
+            if self.stamina > self.max_stamina:
+                self.stamina = self.max_stamina
         
     def update_head_rotation(self, mouse_x):
         """Met à jour la rotation de la tête selon la position de la souris avec plusieurs paliers"""
@@ -474,3 +538,19 @@ class Player:
         # Applique les mouvements
         self.x += forward_x * self.speed_forward + strafe_x * self.speed_strafe
         self.z += forward_z * self.speed_forward + strafe_z * self.speed_strafe
+    
+    def check_collision(self, objects, collision_radius=100):
+        """Check collision with objects and prevent movement through them"""
+        for obj in objects:
+            # Calculate distance to object
+            dx = self.x - obj.x
+            dz = self.z - obj.z
+            distance = math.sqrt(dx*dx + dz*dz)
+            
+            if distance < collision_radius:
+                # Push player away from object
+                if distance > 0:
+                    push_x = (dx / distance) * (collision_radius - distance)
+                    push_z = (dz / distance) * (collision_radius - distance)
+                    self.x += push_x
+                    self.z += push_z

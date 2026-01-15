@@ -1,0 +1,41 @@
+"""Fichier de map pour D8 Engine"""
+from world import GameObject
+
+def load_map():
+    """Retourne la liste des objets de la map"""
+    return [
+        GameObject("assets/tree.png", x=-450.0, y=0.0, z=-350.0, destroyable=False),
+        GameObject("assets/tree.png", x=-650.0, y=0.0, z=-95.0, destroyable=False),
+        GameObject("assets/tree.png", x=-425.0, y=0.0, z=520.0, destroyable=False),
+        GameObject("assets/tree.png", x=-645.0, y=0.0, z=262.5, destroyable=False),
+        GameObject("assets/tree.png", x=277.5, y=0.0, z=666.67, destroyable=False),
+        GameObject("assets/tree.png", x=-60.0, y=0.0, z=676.67, destroyable=False),
+        GameObject("assets/tree.png", x=-600.01, y=0.0, z=-731.33, destroyable=False),
+        GameObject("assets/tree.png", x=626.67, y=0.0, z=400.0, destroyable=False),
+        GameObject("assets/tree.png", x=806.67, y=0.0, z=80.0, destroyable=False),
+        GameObject("assets/tree.png", x=753.33, y=0.0, z=-243.33, destroyable=False),
+        GameObject("assets/tree.png", x=443.33, y=0.0, z=-476.67, destroyable=False),
+        GameObject("assets/tree.png", x=156.67, y=0.0, z=-730.0, destroyable=False),
+        GameObject("assets/tree.png", x=-640.0, y=0.0, z=-992.5, destroyable=False),
+        GameObject("assets/tree.png", x=130.0, y=0.0, z=-1045.0, destroyable=False),
+        GameObject("assets/tree.png", x=30.0, y=0.0, z=-1265.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1140.33, y=0.0, z=966.33, destroyable=False),
+        GameObject("assets/status.png", x=-289.99, y=0.0, z=-1280.0, destroyable=True),
+        GameObject("assets/status.png", x=-176.67, y=0.0, z=-696.67, destroyable=True),
+        GameObject("assets/tree.png", x=-650.0, y=0.0, z=-1245.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1448.0, y=0.0, z=-694.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1428.0, y=0.0, z=-290.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1468.0, y=0.0, z=186.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1436.0, y=0.0, z=622.0, destroyable=False),
+        GameObject("assets/tree.png", x=595.0, y=0.0, z=-1995.0, destroyable=False),
+        GameObject("assets/tree.png", x=-705.0, y=0.0, z=1250.0, destroyable=False),
+        GameObject("assets/tree.png", x=-150.0, y=0.0, z=1260.0, destroyable=False),
+        GameObject("assets/tree.png", x=500.0, y=0.0, z=1260.0, destroyable=False),
+        GameObject("assets/tree.png", x=1165.0, y=0.0, z=1170.0, destroyable=False),
+        GameObject("assets/tree.png", x=1595.0, y=0.0, z=700.0, destroyable=False),
+        GameObject("assets/tree.png", x=1600.0, y=0.0, z=-10.0, destroyable=False),
+        GameObject("assets/tree.png", x=1445.0, y=0.0, z=-725.0, destroyable=False),
+        GameObject("assets/tree.png", x=1115.0, y=0.0, z=-1470.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1480.0, y=0.0, z=-1390.0, destroyable=False),
+        GameObject("assets/tree.png", x=-1515.0, y=0.0, z=-1975.0, destroyable=False),
+    ]

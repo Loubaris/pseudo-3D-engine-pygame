@@ -6,6 +6,7 @@ import math
 # Imports des modules personnalisés
 from player import Player, Camera, Weapon, Gun, Bow, Inventory
 from world import GameObject
+from map.map import load_map
 
 pygame.init()
 
@@ -35,6 +36,10 @@ class Game:
         # Animation de balancement de tête
         self.head_bob_offset = 0.0
         
+        # Game state
+        self.paused = False
+        self.kill_count = 0
+        
         # Initialisation de la caméra et du joueur
         self.camera = Camera()
         self.player = Player()
@@ -45,43 +50,8 @@ class Game:
         self.inventory.add_weapon(Bow())
         self.inventory.current_weapon_index = 1  # Commence avec l'arc
         
-        # Initialisation des objets du décor avec coordonnées 3D (x, y, z)
-        # x = gauche(-)/droite(+), y = hauteur, z = profondeur (négatif = derrière le joueur)
-        # L'ancrage au sol est automatique selon la taille de l'image
-        self.objects = [
-            GameObject("assets/tree.png", x=300, y=0, z=500),
-            GameObject("assets/tree.png", x=-500, y=0, z=700),
-            GameObject("assets/tree.png", x=1200, y=0, z=900),
-            GameObject("assets/tree.png", x=-1400, y=0, z=1100),
-            GameObject("assets/tree.png", x=800, y=0, z=650),
-            GameObject("assets/tree.png", x=-1000, y=0, z=1300),
-            GameObject("assets/tree.png", x=2000, y=0, z=1400),
-            GameObject("assets/tree.png", x=-2200, y=0, z=1600),
-            GameObject("assets/tree.png", x=1000, y=0, z=2300),
-            GameObject("assets/tree.png", x=-1600, y=0, z=2500),
-        
-            GameObject("assets/tree.png", x=2500, y=0, z=400),
-            GameObject("assets/tree.png", x=2800, y=0, z=1000),
-            GameObject("assets/tree.png", x=-2800, y=0, z=1200),
-            
-            GameObject("assets/tree.png", x=400, y=0, z=-500),
-            GameObject("assets/tree.png", x=-700, y=0, z=-800),
-            GameObject("assets/tree.png", x=1100, y=0, z=-1100),
-            GameObject("assets/tree.png", x=-1300, y=0, z=-900),
-            GameObject("assets/tree.png", x=1500, y=0, z=-1400),
-            GameObject("assets/tree.png", x=-900, y=0, z=-2000),
-            GameObject("assets/tree.png", x=2000, y=0, z=-1200),
-            GameObject("assets/tree.png", x=-2400, y=0, z=-1500),
-            
-
-            GameObject("assets/statue.png", x=0, y=0, z=2700, destroyable=True),
-            GameObject("assets/statue.png", x=1700, y=0, z=2000, destroyable=True),
-            GameObject("assets/statue.png", x=-1900, y=0, z=2200, destroyable=True),
-            GameObject("assets/statue.png", x=600, y=0, z=-1300, destroyable=True),
-            GameObject("assets/statue.png", x=-800, y=0, z=-1700, destroyable=True),
-            GameObject("assets/statue.png", x=1800, y=0, z=-2200, destroyable=True),
-            GameObject("assets/statue.png", x=-2000, y=0, z=-2500, destroyable=True),
-        ]
+        # Chargement de la map depuis le fichier externe
+        self.objects = load_map()
         
         print("MOTEUR DE JEU LANCÉ")
         print("Contrôles:")
@@ -121,11 +91,19 @@ class Game:
                                 
                                 # Détruit l'objet (le retire de la liste)
                                 self.objects.remove(obj)
+                                self.kill_count += 1  # Increment kill counter
                                 break  # Ne détruit qu'un seul objet par tir
                     
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.paused = not self.paused  # Toggle pause
+                elif event.key == pygame.K_DOWN:
                     self.inventory.switch_to_next()
+                elif event.key == pygame.K_r:
+                    # Reload weapon
+                    weapon = self.inventory.get_current_weapon()
+                    if isinstance(weapon, Gun):
+                        weapon.start_reload()
                 elif event.key == pygame.K_SPACE:
                     self.camera.start_jump()
                 elif event.key == pygame.K_w:
@@ -159,6 +137,9 @@ class Game:
                     
     def update(self, delta_time):
         """Met à jour le jeu"""
+        if self.paused:
+            return  # Don't update when paused
+        
         mouse_x, mouse_y = pygame.mouse.get_pos()
         
         # IMPORTANT: Mise à jour de l'angle AVANT le mouvement du joueur
@@ -168,6 +149,12 @@ class Game:
         # Vérifie si le joueur se déplace pour l'animation de sprint
         is_moving = (self.player.moving_forward or self.player.moving_backward or 
                      self.player.moving_left or self.player.moving_right)
+        
+        # Update stamina
+        self.player.update_stamina(delta_time, is_moving)
+        
+        # Check collisions with objects
+        self.player.check_collision(self.objects)
         
         # Mise à jour de la caméra
         self.camera.update_scroll(mouse_y)
@@ -248,13 +235,98 @@ class Game:
         # Affichage des munitions pour le pistolet
         current_weapon = self.inventory.get_current_weapon()
         if isinstance(current_weapon, Gun):
-            ammo_text = font.render(f"Munitions: {current_weapon.munitions}", True, (255, 255, 255))
+            if current_weapon.is_reloading:
+                reload_progress = (current_weapon.reload_timer / current_weapon.reload_duration) * 100
+                ammo_text = font.render(f"Reloading... {reload_progress:.0f}%", True, (255, 255, 0))
+            else:
+                ammo_text = font.render(f"Ammo: {current_weapon.munitions}/{current_weapon.reserve_ammo}", True, (255, 255, 255))
             self.screen.blit(ammo_text, (10, 85))
+        
+        # Stamina bar
+        stamina_bar_width = 200
+        stamina_bar_height = 20
+        stamina_percent = self.player.stamina / self.player.max_stamina
+        pygame.draw.rect(self.screen, (50, 50, 50), (10, 110, stamina_bar_width, stamina_bar_height))
+        pygame.draw.rect(self.screen, (0, 200, 255), (10, 110, int(stamina_bar_width * stamina_percent), stamina_bar_height))
+        pygame.draw.rect(self.screen, (255, 255, 255), (10, 110, stamina_bar_width, stamina_bar_height), 2)
+        stamina_text = font.render("Stamina", True, (255, 255, 255))
+        self.screen.blit(stamina_text, (220, 110))
+        
+        # Kill counter
+        kill_text = font.render(f"Kills: {self.kill_count}", True, (255, 255, 100))
+        self.screen.blit(kill_text, (10, 140))
+        
+        # Pause menu overlay
+        if self.paused:
+            overlay = pygame.Surface((1000, 600))
+            overlay.set_alpha(180)
+            overlay.fill((0, 0, 0))
+            self.screen.blit(overlay, (0, 0))
+            
+            pause_font = pygame.font.Font(None, 72)
+            pause_text = pause_font.render("PAUSED", True, (255, 255, 255))
+            pause_rect = pause_text.get_rect(center=(500, 250))
+            self.screen.blit(pause_text, pause_rect)
+            
+            info_font = pygame.font.Font(None, 32)
+            info_text = info_font.render("Press ESC to resume", True, (200, 200, 200))
+            info_rect = info_text.get_rect(center=(500, 330))
+            self.screen.blit(info_text, info_rect)
+        
+        # Mini-map (top-right corner)
+        self.draw_minimap()
         
         # Restaure le ground_y original après le rendu
         self.camera.ground_y -= self.head_bob_offset
         
         pygame.display.flip()
+    
+    def draw_minimap(self):
+        """Draw a mini-map in the top-right corner"""
+        minimap_size = 180
+        minimap_x = 1000 - minimap_size - 10
+        minimap_y = 10
+        minimap_scale = 0.08  # Scale factor for world to minimap
+        
+        # Background
+        pygame.draw.rect(self.screen, (30, 30, 30), (minimap_x, minimap_y, minimap_size, minimap_size))
+        pygame.draw.rect(self.screen, (255, 255, 255), (minimap_x, minimap_y, minimap_size, minimap_size), 2)
+        
+        # Center of minimap
+        center_x = minimap_x + minimap_size // 2
+        center_y = minimap_y + minimap_size // 2
+        
+        # Draw objects
+        for obj in self.objects:
+            rel_x = (obj.x - self.player.x) * minimap_scale
+            rel_z = (obj.z - self.player.z) * minimap_scale
+            
+            # Rotate relative to player angle
+            cos_a = math.cos(-self.player.angle)
+            sin_a = math.sin(-self.player.angle)
+            rotated_x = rel_x * cos_a - rel_z * sin_a
+            rotated_z = rel_x * sin_a + rel_z * cos_a
+            
+            map_x = int(center_x + rotated_x)
+            map_y = int(center_y + rotated_z)
+            
+            # Only draw if within minimap bounds
+            if minimap_x < map_x < minimap_x + minimap_size and minimap_y < map_y < minimap_y + minimap_size:
+                color = (255, 100, 100) if obj.destroyable else (100, 255, 100)
+                pygame.draw.circle(self.screen, color, (map_x, map_y), 3)
+        
+        # Draw player (center, facing up)
+        pygame.draw.circle(self.screen, (255, 255, 0), (center_x, center_y), 5)
+        # Direction indicator
+        dir_length = 12
+        end_x = center_x
+        end_y = center_y - dir_length
+        pygame.draw.line(self.screen, (255, 255, 0), (center_x, center_y), (end_x, end_y), 2)
+        
+        # Label
+        label_font = pygame.font.Font(None, 18)
+        label_text = label_font.render("Mini-Map", True, (255, 255, 255))
+        self.screen.blit(label_text, (minimap_x + 5, minimap_y + minimap_size + 5))
         
     def run(self):
         """Boucle principale du jeu"""
